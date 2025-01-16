@@ -1,0 +1,285 @@
+#mainactivity
+
+package com.example.now;
+
+import android.app.DatePickerDialog;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.*;
+import androidx.appcompat.app.AppCompatActivity;
+
+import java.util.Calendar;
+
+public class MainActivity extends AppCompatActivity {
+
+    private FrameLayout container;
+    private View addMeetingView, viewMeetingsView;
+    private Button addMeetingButton, viewMeetingsButton;
+    private EditText meetingDateInput, meetingTimeInput, meetingAgendaInput, filterDateInput;
+    private TextView meetingsList;
+    private com.example.now.DataBaseConn db;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        db = new com.example.now.DataBaseConn(this);
+
+        // Initialize layout elements
+        container = findViewById(R.id.container);
+        addMeetingButton = findViewById(R.id.addMeetingButton);
+        viewMeetingsButton = findViewById(R.id.viewMeetingsButton);
+
+        // Inflate views
+        addMeetingView = getLayoutInflater().inflate(R.layout.add_meeting_view, null);
+        viewMeetingsView = getLayoutInflater().inflate(R.layout.view_meetings_view, null);
+
+        // Default to Add Meeting View
+        switchToAddMeetingView();
+
+        // Add View Listeners
+        addMeetingButton.setOnClickListener(v -> switchToAddMeetingView());
+        viewMeetingsButton.setOnClickListener(v -> switchToViewMeetingsView());
+    }
+
+    private void switchToAddMeetingView() {
+        container.removeAllViews();
+        container.addView(addMeetingView);
+
+        meetingDateInput = addMeetingView.findViewById(R.id.meetingDateInput);
+        meetingTimeInput = addMeetingView.findViewById(R.id.meetingTimeInput);
+        meetingAgendaInput = addMeetingView.findViewById(R.id.meetingAgendaInput);
+
+        Button addMeetingButtonSubmit = addMeetingView.findViewById(R.id.addMeetingButtonSubmit);
+
+        meetingDateInput.setOnClickListener(v -> showDatePickerDialog(meetingDateInput));
+
+        addMeetingButtonSubmit.setOnClickListener(v -> {
+            String date = meetingDateInput.getText().toString();
+            String time = meetingTimeInput.getText().toString();
+            String agenda = meetingAgendaInput.getText().toString();
+
+            if (date.isEmpty() || time.isEmpty() || agenda.isEmpty()) {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+            } else {
+                boolean result = db.insertData(date, time, agenda);
+                if (result) {
+                    Toast.makeText(this, "Meeting Added", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Error Adding Meeting", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void switchToViewMeetingsView() {
+        container.removeAllViews();
+        container.addView(viewMeetingsView);
+
+        filterDateInput = viewMeetingsView.findViewById(R.id.filterDateInput);
+        meetingsList = viewMeetingsView.findViewById(R.id.meetingsList);
+        Button filterMeetingsButton = viewMeetingsView.findViewById(R.id.filterMeetingsButton);
+
+        filterDateInput.setOnClickListener(v -> showDatePickerDialog(filterDateInput));
+
+        filterMeetingsButton.setOnClickListener(v -> {
+            String date = filterDateInput.getText().toString();
+            if (date.isEmpty()) {
+                Toast.makeText(this, "Please select a date", Toast.LENGTH_SHORT).show();
+            } else {
+                Cursor cursor = db.fetchData(date);
+                if (cursor.getCount() == 0) {
+                    meetingsList.setText("No meetings found for this date.");
+                } else {
+                    StringBuilder result = new StringBuilder();
+                    while (cursor.moveToNext()) {
+                        result.append("Time: ").append(cursor.getString(2)).append("\n");
+                        result.append("Agenda: ").append(cursor.getString(3)).append("\n\n");
+                    }
+                    meetingsList.setText(result.toString());
+                }
+            }
+        });
+    }
+
+    private void showDatePickerDialog(EditText dateInput) {
+        final Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                this,
+                (view, selectedYear, selectedMonth, selectedDay) -> {
+                    String date = selectedDay + "/" + (selectedMonth + 1) + "/" + selectedYear;
+                    dateInput.setText(date);
+                },
+                year, month, day
+        );
+
+        datePickerDialog.show();
+    }
+}
+
+
+#ACTIVITY.XML
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/addMeetingButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Add Meeting" />
+
+        <Button
+            android:id="@+id/viewMeetingsButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="View Meetings" />
+    </LinearLayout>
+
+    <!-- FrameLayout for swapping views -->
+    <FrameLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>
+
+
+#DATABASE
+package com.example.now;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+
+public class DataBaseConn extends SQLiteOpenHelper {
+
+    private static final String DATABASE_NAME = "MeetingSchedule.db";
+    private static final String TABLE_NAME = "meetings";
+    private static final String COL_1 = "ID";
+    private static final String COL_2 = "DATE";
+    private static final String COL_3 = "TIME";
+    private static final String COL_4 = "AGENDA";
+
+    public DataBaseConn(Context context) {
+        super(context, DATABASE_NAME, null, 1);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE " + TABLE_NAME + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, DATE TEXT, TIME TEXT, AGENDA TEXT)");
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+        onCreate(db);
+    }
+
+    public boolean insertData(String date, String time, String agenda) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(COL_2, date);
+        contentValues.put(COL_3, time);
+        contentValues.put(COL_4, agenda);
+
+        long result = db.insert(TABLE_NAME, null, contentValues);
+        return result != -1;
+    }
+
+    public Cursor fetchData(String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery("SELECT * FROM " + TABLE_NAME + " WHERE DATE = ?", new String[]{date});
+    }
+}
+
+
+#ADD_MEETING_VIEW.XML
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/meetingDateInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Select Date"
+        android:focusable="false"
+        android:clickable="true" />
+
+    <EditText
+        android:id="@+id/meetingTimeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Time (e.g., 10:00 AM)" />
+
+    <EditText
+        android:id="@+id/meetingAgendaInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Meeting Agenda" />
+
+    <Button
+        android:id="@+id/addMeetingButtonSubmit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Meeting"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>
+
+
+#VIEW_MEETINGS_VIEW
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/filterDateInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Select Date"
+        android:focusable="false"
+        android:clickable="true" />
+
+    <Button
+        android:id="@+id/filterMeetingsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Meetings"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/meetingsList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Meeting Agendas will appear here"
+        android:textSize="16sp" />
+
+</LinearLayout>
