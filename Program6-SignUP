@@ -1,0 +1,303 @@
+#Sign IN
+package com.example.signup;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class signin extends AppCompatActivity {
+
+    private EditText usernameField, passwordField;
+    private Button loginButton;
+    private String correctUsername, correctPassword;
+    private int attemptsLeft = 2; // Max 2 attempts
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_signin);
+
+        usernameField = findViewById(R.id.username);
+        passwordField = findViewById(R.id.password);
+        loginButton = findViewById(R.id.login);
+
+        // Retrieve data from signup activity
+        Intent intent = getIntent();
+        correctUsername = intent.getStringExtra("username");
+        correctPassword = intent.getStringExtra("password");
+
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String username = usernameField.getText().toString().trim();
+                String password = passwordField.getText().toString().trim();
+
+                if (username.equals(correctUsername) && password.equals(correctPassword)) {
+                    // Successful login
+                    Toast.makeText(signin.this, "Login Successful!", Toast.LENGTH_SHORT).show();
+                    Intent welcomeIntent = new Intent(signin.this, welcome.class);
+                    startActivity(welcomeIntent);
+                    finish();
+                } else {
+                    // Failed login
+                    attemptsLeft--;
+                    if (attemptsLeft > 0) {
+                        Toast.makeText(signin.this, "Login Failed. Attempts left: " + attemptsLeft, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(signin.this, "Login Failed. No attempts left.", Toast.LENGTH_LONG).show();
+                        loginButton.setEnabled(false); // Disable login button
+                    }
+                }
+            }
+        });
+    }
+}
+
+
+#SIGN UP
+package com.example.signup;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Patterns;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+import java.util.regex.Pattern;
+
+public class signup extends AppCompatActivity {
+
+    private EditText usernameField, passwordField;
+    private Button signUpButton;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        usernameField = findViewById(R.id.username);
+        passwordField = findViewById(R.id.password);
+        signUpButton = findViewById(R.id.sighup);
+
+        signUpButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String username = usernameField.getText().toString().trim();
+                String password = passwordField.getText().toString().trim();
+
+                // Validate input
+                if (TextUtils.isEmpty(username)) {
+                    Toast.makeText(signup.this, "Username is required", Toast.LENGTH_SHORT).show();
+                } else if (!isValidEmail(username)) {
+                    Toast.makeText(signup.this, "Enter a valid email as username", Toast.LENGTH_SHORT).show();
+                } else if (TextUtils.isEmpty(password)) {
+                    Toast.makeText(signup.this, "Password is required", Toast.LENGTH_SHORT).show();
+                } else if (!isValidPassword(password)) {
+                    Toast.makeText(signup.this, "Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters", Toast.LENGTH_LONG).show();
+                } else {
+                    // Navigate to signin activity and pass data
+                    Intent intent = new Intent(signup.this, signin.class);
+                    intent.putExtra("username", username);
+                    intent.putExtra("password", password);
+                    startActivity(intent);
+                    finish();
+                }
+            }
+        });
+    }
+
+    // Validate password
+    private boolean isValidPassword(String password) {
+        String passwordPattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,}$";
+        return Pattern.matches(passwordPattern, password);
+    }
+
+    // Validate username as email
+    private boolean isValidEmail(String email) {
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches();
+    }
+}
+
+
+
+#WELCOM.JAVA
+package com.example.signup;
+
+import android.os.Bundle;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+public class welcome extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_welcome);
+
+    }
+}
+
+
+
+
+
+#ACTIVITY.XML
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".signup">
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:lineSpacingExtra="8sp"
+        android:text="SIGNUP"
+        android:textColor="#8727B0"
+        android:textSize="48sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.155" />
+
+    <Button
+        android:id="@+id/sighup"
+        android:layout_width="172dp"
+        android:layout_height="64dp"
+        android:layout_marginStart="116dp"
+        android:layout_marginTop="528dp"
+        android:text="SIGN UP"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/username"
+        android:layout_width="280dp"
+        android:layout_height="87dp"
+        android:ems="10"
+        android:hint="username :"
+        android:inputType="text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.496"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:layout_editor_absoluteY="244dp" />
+
+    <EditText
+        android:id="@+id/password"
+        android:layout_width="298dp"
+        android:layout_height="88dp"
+        android:ems="10"
+        android:hint="password:"
+        android:inputType="text"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.575"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.559" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+#ACTIVITY_SIGIN
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".signin">
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="152dp"
+        android:layout_height="97dp"
+        android:layout_marginStart="128dp"
+        android:layout_marginTop="28dp"
+        android:text="Login Activity"
+        android:textAlignment="center"
+        android:textSize="34sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/username"
+        android:layout_width="230dp"
+        android:layout_height="63dp"
+        android:layout_marginStart="88dp"
+        android:layout_marginTop="188dp"
+        android:ems="10"
+        android:hint="username:"
+        android:inputType="text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/password"
+        android:layout_width="232dp"
+        android:layout_height="74dp"
+        android:layout_marginStart="88dp"
+        android:layout_marginTop="292dp"
+        android:ems="10"
+        android:hint="password:"
+        android:inputType="text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/login"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="176dp"
+        android:layout_marginTop="452dp"
+        android:text="Login"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+#ACTIVITY_WELCOM
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".welcome">
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="311dp"
+        android:layout_height="123dp"
+        android:text="WELCOME TO HOME PAGE"
+        android:textAlignment="center"
+        android:textColor="#E91E63"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
